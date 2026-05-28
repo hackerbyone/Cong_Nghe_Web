@@ -1,38 +1,28 @@
-import { useState, useEffect } from 'react' // Nhớ thêm useEffect
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-// Gọi API Category vào Header
-import { categoryService } from '../services/category/categoryService' 
+import { categoryService } from '../services/category/categoryService'
 import styles from './Header.module.css'
 
 export default function Header() {
   const { count } = useCart()
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const [search, setSearch] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  
-  // 1. Giỏ đựng Danh mục từ Database
-  const [categories, setCategories] = useState([]) 
+  const [categories, setCategories] = useState([])
   const navigate = useNavigate()
 
-  // 2. Chạy ngầm việc lấy danh mục khi Header vừa load
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await categoryService.getAll()
-        setCategories(res)
-      } catch (error) {
-        console.error('Lỗi tải danh mục trên Header:', error)
-      }
-    }
-    fetchCategories()
+    categoryService.getAll()
+      .then(res => setCategories(res))
+      .catch(() => {})
   }, [])
 
   const handleSearch = e => {
     e.preventDefault()
-    if (search.trim()) navigate(`/products?q=${encodeURIComponent(search.trim())}`) // Sửa 'q=' thành 'keyword=' cho chuẩn C#
+    if (search.trim()) navigate(`/products?q=${encodeURIComponent(search.trim())}`)
   }
 
   const handleLogout = () => {
@@ -59,17 +49,11 @@ export default function Header() {
 
         <ul className={`${styles.menu} ${menuOpen ? styles.open : ''}`}>
           <li><Link to="/products" onClick={() => setMenuOpen(false)}>Tất cả sản phẩm</Link></li>
-          
-          {/* 3. Vòng lặp map() in danh mục tự động từ CSDL */}
           {categories.map(cat => (
             <li key={cat.id}>
-              {/* Truyền đúng ID danh mục vào URL */}
-              <Link to={`/products?cat=${cat.id}`} onClick={() => setMenuOpen(false)}>
-                {cat.name}
-              </Link>
+              <Link to={`/products?cat=${cat.id}`} onClick={() => setMenuOpen(false)}>{cat.name}</Link>
             </li>
           ))}
-          
           <li><Link to="/blog" onClick={() => setMenuOpen(false)}>Blog</Link></li>
         </ul>
 
@@ -84,17 +68,22 @@ export default function Header() {
         </form>
 
         <div className={styles.rightNav}>
+          {/* Nút giỏ hàng */}
           <Link to="/cart" className={styles.cartBtn}>
             <span className={styles.cartIcon}>🛒</span>
             {count > 0 && <span className={styles.badge}>{count}</span>}
           </Link>
 
+          {/* Nút đơn hàng — chỉ hiện khi đã đăng nhập */}
+          {user && (
+            <Link to="/orders" className={styles.ordersBtn} title="Đơn hàng của tôi">
+              📦
+            </Link>
+          )}
+
           {user ? (
             <div className={styles.userMenu}>
-              <button
-                className={styles.userBtn}
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-              >
+              <button className={styles.userBtn} onClick={() => setUserMenuOpen(!userMenuOpen)}>
                 👤 {user.username}
               </button>
               {userMenuOpen && (
@@ -102,29 +91,31 @@ export default function Header() {
                   <div className={styles.userInfo}>
                     <p><strong>{user.name}</strong></p>
                     <p>{user.email}</p>
-                    <p>Role: {user.role}</p>
                   </div>
 
                   <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #eee' }} />
-                  <Link 
-                    to="/orders" 
-                    style={{ display: 'block', padding: '8px 0', color: '#0ea5e9', textDecoration: 'none', fontWeight: '500', textAlign: 'center' }}
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    📦 Đơn hàng của tôi
-                  </Link>
+
+                  {isAdmin() && (
+                    <Link
+                      to="/admin"
+                      style={{
+                        display: 'block', padding: '8px 12px', textDecoration: 'none', fontWeight: 600,
+                        color: '#fff', background: 'linear-gradient(90deg,#1565c0,#1976d2)',
+                        borderRadius: 6, margin: '6px 0', textAlign: 'center',
+                      }}
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      ⚙️ Vào trang Admin
+                    </Link>
+                  )}
+
                   <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #eee' }} />
-                  
-                  <button onClick={handleLogout} className={styles.logoutBtn}>
-                    Đăng Xuất
-                  </button>
+                  <button onClick={handleLogout} className={styles.logoutBtn}>Đăng Xuất</button>
                 </div>
               )}
             </div>
           ) : (
-            <Link to="/login" className={styles.loginBtn}>
-              Đăng Nhập
-            </Link>
+            <Link to="/login" className={styles.loginBtn}>Đăng Nhập</Link>
           )}
         </div>
       </nav>

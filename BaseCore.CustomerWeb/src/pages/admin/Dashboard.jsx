@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext'
 export default function Dashboard() {
   const [stats, setStats] = useState({ products: 0, categories: 0, users: 0 })
   const [loading, setLoading] = useState(true)
-  const { isAdmin } = useAuth()
+  const { isAdmin: isAdminFn } = useAuth()
 
   useEffect(() => {
     const loadStats = async () => {
@@ -27,7 +27,7 @@ export default function Dashboard() {
           : categoriesRes.data?.length ?? 0
 
         let usersCount = 0
-        if (isAdmin()) {
+        if (isAdminFn()) {
           try {
             const usersRes = await userService.getAll({ page: 1, pageSize: 1 })
             // Hỗ trợ nhiều format response
@@ -103,7 +103,7 @@ export default function Dashboard() {
                   </Link>
                 </div>
               </div>
-              {isAdmin() && (
+              {isAdminFn() && (
                 <div className="col-lg-3 col-6">
                   <div className="small-box bg-warning">
                     <div className="inner">

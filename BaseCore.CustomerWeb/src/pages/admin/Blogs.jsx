@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { blogService } from '../../services/blog/blogService';
 import { uploadService } from '../../services/upload/uploadService';
 import { useAuth } from '../../context/AuthContext';
@@ -13,19 +13,29 @@ const Blogs = () => {
     const [itemsPerPage] = useState(5);
     const [formData, setFormData] = useState({
         title: '',
-        shortDescription: '', 
+        shortDescription: '',
         content: '',
         imageUrl: '',
-        author: '',         
-        isActive: true      
+        author: '',
+        isActive: true
     });
     const [error, setError] = useState('');
     const [uploadingImage, setUploadingImage] = useState(false);
     const { isAdmin } = useAuth();
 
+    // FIX 5: dùng ref cho textarea content để hỗ trợ paste
+    const contentRef = useRef(null);
+    const shortDescRef = useRef(null);
+
+    useEffect(() => { loadBlogs(); }, []);
+
+    // FIX 5: sync ref value khi formData thay đổi (khi mở modal edit)
     useEffect(() => {
-        loadBlogs();
-    }, []);
+        if (showModal) {
+            if (contentRef.current) contentRef.current.value = formData.content;
+            if (shortDescRef.current) shortDescRef.current.value = formData.shortDescription;
+        }
+    }, [showModal, editingBlog]);
 
     const loadBlogs = async () => {
         setLoading(true);
@@ -34,7 +44,7 @@ const Blogs = () => {
             const list = Array.isArray(response)
                 ? response
                 : response.items ?? response.data?.items ?? response.data ?? response.records ?? [];
-            setBlogs(list); 
+            setBlogs(list);
         } catch (error) {
             console.error('Lỗi khi tải danh sách blog:', error);
         } finally {
@@ -70,16 +80,22 @@ const Blogs = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        // FIX 5: lấy value trực tiếp từ ref khi submit
+        const submitData = {
+            ...formData,
+            content: contentRef.current?.value ?? formData.content,
+            shortDescription: shortDescRef.current?.value ?? formData.shortDescription,
+        };
         try {
             if (editingBlog) {
-                await blogService.update(editingBlog.id, formData);
+                await blogService.update(editingBlog.id, submitData);
             } else {
-                await blogService.create(formData);
+                await blogService.create(submitData);
             }
             closeModal();
             loadBlogs();
         } catch (error) {
-            setError(error.response?.data?.message || 'Thao tác thất bại');
+            setError(error.message || 'Thao tác thất bại');
         }
     };
 
@@ -109,7 +125,6 @@ const Blogs = () => {
         }
     };
 
-    // Lọc danh sách blog theo tìm kiếm
     const filteredBlogs = blogs.filter(blog => {
         const query = searchQuery.toLowerCase();
         return (
@@ -119,26 +134,14 @@ const Blogs = () => {
         );
     });
 
-    // Tính toán phân trang
     const totalPages = Math.ceil(filteredBlogs.length / itemsPerPage);
     const indexOfLastBlog = currentPage * itemsPerPage;
     const indexOfFirstBlog = indexOfLastBlog - itemsPerPage;
     const currentBlogs = filteredBlogs.slice(indexOfFirstBlog, indexOfLastBlog);
 
-    // Reset trang khi tìm kiếm thay đổi
-    const handleSearchChange = (e) => {
-        setSearchQuery(e.target.value);
-        setCurrentPage(1);
-    };
-
-    const handleClearSearch = () => {
-        setSearchQuery('');
-        setCurrentPage(1);
-    };
-
-    const goToPage = (pageNumber) => {
-        setCurrentPage(Math.max(1, Math.min(pageNumber, totalPages)));
-    };
+    const handleSearchChange = (e) => { setSearchQuery(e.target.value); setCurrentPage(1); };
+    const handleClearSearch = () => { setSearchQuery(''); setCurrentPage(1); };
+    const goToPage = (n) => setCurrentPage(Math.max(1, Math.min(n, totalPages)));
 
     return (
         <>
@@ -146,9 +149,7 @@ const Blogs = () => {
                 <div className="container-fluid">
                     <div className="row mb-2">
                         <div className="col-sm-6">
-                            <h1 className="m-0">
-                                <i className="fas fa-blog mr-2"></i>Quản lý Bài viết
-                            </h1>
+                            <h1 className="m-0"><i className="fas fa-blog mr-2"></i>Quản lý Bài viết</h1>
                         </div>
                         <div className="col-sm-6">
                             <ol className="breadcrumb float-sm-right">
@@ -166,9 +167,7 @@ const Blogs = () => {
                         <div className="card-header">
                             <div className="row align-items-center">
                                 <div className="col-md-6">
-                                    <h3 className="card-title m-0">
-                                        <i className="fas fa-list mr-2"></i>Danh sách bài viết
-                                    </h3>
+                                    <h3 className="card-title m-0"><i className="fas fa-list mr-2"></i>Danh sách bài viết</h3>
                                 </div>
                                 <div className="col-md-6 text-right">
                                     {isAdmin() && (
@@ -180,16 +179,13 @@ const Blogs = () => {
                             </div>
                         </div>
                         <div className="card-body">
-                            {/* Thanh tìm kiếm */}
                             <div className="row mb-3">
                                 <div className="col-md-8">
                                     <div className="input-group">
                                         <input
-                                            type="text"
-                                            className="form-control"
+                                            type="text" className="form-control"
                                             placeholder="Tìm kiếm theo tiêu đề, tác giả..."
-                                            value={searchQuery}
-                                            onChange={handleSearchChange}
+                                            value={searchQuery} onChange={handleSearchChange}
                                         />
                                         <div className="input-group-append">
                                             <button className="btn btn-outline-secondary" type="button" onClick={handleClearSearch}>
@@ -209,15 +205,15 @@ const Blogs = () => {
                                 <table className="table table-bordered table-striped">
                                     <thead className="text-center">
                                         <tr>
-                                            <th style={{ width: '60px' }}>ID</th>
-                                            <th style={{ width: '100px' }}>Hình ảnh</th>
+                                            <th style={{ width: 60 }}>ID</th>
+                                            <th style={{ width: 100 }}>Hình ảnh</th>
                                             <th>Tiêu đề</th>
                                             <th>Tác giả</th>
-                                            {isAdmin() && <th style={{ width: '120px' }}>Thao tác</th>}
+                                            {isAdmin() && <th style={{ width: 120 }}>Thao tác</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="text-center align-middle">
-                                        {filteredBlogs.length === 0 ? (
+                                        {currentBlogs.length === 0 ? (
                                             <tr><td colSpan={isAdmin() ? 5 : 4}>{searchQuery ? 'Không tìm thấy bài viết nào' : 'Chưa có bài viết nào'}</td></tr>
                                         ) : (
                                             currentBlogs.map(blog => (
@@ -225,33 +221,18 @@ const Blogs = () => {
                                                     <td>{blog.id}</td>
                                                     <td>
                                                         {blog.imageUrl ? (
-                                                            <img 
-                                                                src={blog.imageUrl} 
-                                                                alt={blog.title} 
-                                                                style={{ 
-                                                                    width: '60px', 
-                                                                    height: '60px', 
-                                                                    objectFit: 'cover',
-                                                                    borderRadius: '4px'
-                                                                }} 
-                                                                onError={(e) => {
-                                                                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect fill="%23e0e0e0" width="60" height="60"/%3E%3Ctext x="50%25" y="50%25" font-size="12" fill="%23999" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E'
-                                                                }}
+                                                            <img src={blog.imageUrl} alt={blog.title}
+                                                                style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
+                                                                onError={e => { e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60"%3E%3Crect fill="%23e0e0e0" width="60" height="60"/%3E%3C/svg%3E' }}
                                                             />
-                                                        ) : (
-                                                            <span className="text-muted">Không có ảnh</span>
-                                                        )}
+                                                        ) : <span className="text-muted">Không có ảnh</span>}
                                                     </td>
                                                     <td className="text-left font-weight-bold">{blog.title}</td>
                                                     <td className="text-left">{blog.author || 'N/A'}</td>
                                                     {isAdmin() && (
                                                         <td>
-                                                            <button className="btn btn-sm btn-info mr-1" onClick={() => openModal(blog)} title="Sửa">
-                                                                <i className="fas fa-edit"></i>
-                                                            </button>
-                                                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(blog.id)} title="Xóa">
-                                                                <i className="fas fa-trash"></i>
-                                                            </button>
+                                                            <button className="btn btn-sm btn-info mr-1" onClick={() => openModal(blog)}><i className="fas fa-edit"></i></button>
+                                                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(blog.id)}><i className="fas fa-trash"></i></button>
                                                         </td>
                                                     )}
                                                 </tr>
@@ -260,8 +241,7 @@ const Blogs = () => {
                                     </tbody>
                                 </table>
                             )}
-                            
-                            {/* Phân trang */}
+
                             {!loading && filteredBlogs.length > 0 && (
                                 <nav className="d-flex justify-content-between align-items-center mt-4 flex-wrap">
                                     <div className="text-muted small mb-2 mb-md-0">
@@ -270,46 +250,15 @@ const Blogs = () => {
                                     {totalPages > 1 && (
                                         <ul className="pagination mb-0">
                                             <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                                <button type="button" className="page-link" onClick={() => goToPage(1)} disabled={currentPage === 1}>
-                                                    <i className="fas fa-step-backward"></i>
-                                                </button>
+                                                <button className="page-link" onClick={() => goToPage(currentPage - 1)}>Trước</button>
                                             </li>
-                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                                                <button type="button" className="page-link" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
-                                                    Trước
-                                                </button>
-                                            </li>
-                                            
-                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => {
-                                                const isNearCurrent = Math.abs(pageNum - currentPage) <= 1;
-                                                const isFirst = pageNum === 1;
-                                                const isLast = pageNum === totalPages;
-                                                
-                                                if (isNearCurrent || isFirst || isLast) {
-                                                    return (
-                                                        <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
-                                                            <button type="button" className="page-link" onClick={() => goToPage(pageNum)}>
-                                                                {pageNum}
-                                                            </button>
-                                                        </li>
-                                                    );
-                                                } else if (pageNum === 2 && !isNearCurrent) {
-                                                    return <li key="dots-start" className="page-item disabled"><span className="page-link">...</span></li>;
-                                                } else if (pageNum === totalPages - 1 && !isNearCurrent) {
-                                                    return <li key="dots-end" className="page-item disabled"><span className="page-link">...</span></li>;
-                                                }
-                                                return null;
-                                            })}
-                                            
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                                                <li key={n} className={`page-item ${currentPage === n ? 'active' : ''}`}>
+                                                    <button className="page-link" onClick={() => goToPage(n)}>{n}</button>
+                                                </li>
+                                            ))}
                                             <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                                <button type="button" className="page-link" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
-                                                    Sau
-                                                </button>
-                                            </li>
-                                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                                                <button type="button" className="page-link" onClick={() => goToPage(totalPages)} disabled={currentPage === totalPages}>
-                                                    <i className="fas fa-step-forward"></i>
-                                                </button>
+                                                <button className="page-link" onClick={() => goToPage(currentPage + 1)}>Sau</button>
                                             </li>
                                         </ul>
                                     )}
@@ -320,7 +269,7 @@ const Blogs = () => {
                 </div>
             </section>
 
-            {/* Modal Form */}
+            {/* Modal */}
             {showModal && (
                 <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
                     <div className="modal-dialog modal-lg">
@@ -335,76 +284,79 @@ const Blogs = () => {
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body text-dark">
                                     {error && <div className="alert alert-danger">{error}</div>}
+
                                     <div className="form-group">
                                         <label>Tiêu đề bài viết <span className="text-danger">*</span></label>
-                                        <input type="text" className="form-control" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+                                        <input type="text" className="form-control" value={formData.title}
+                                            onChange={e => setFormData({ ...formData, title: e.target.value })} required />
                                     </div>
+
                                     <div className="form-group">
                                         <label>Mô tả ngắn</label>
-                                        <textarea className="form-control" rows="2" value={formData.shortDescription} onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })} />
+                                        {/* FIX 5: dùng ref, không dùng value controlled để paste hoạt động */}
+                                        <textarea
+                                            ref={shortDescRef}
+                                            className="form-control" rows="2"
+                                            defaultValue={formData.shortDescription}
+                                            placeholder="Mô tả ngắn hiển thị ngoài danh sách..."
+                                        />
                                     </div>
+
                                     <div className="form-group">
                                         <label>Tác giả</label>
-                                        <input type="text" className="form-control" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} />
+                                        <input type="text" className="form-control" value={formData.author}
+                                            onChange={e => setFormData({ ...formData, author: e.target.value })} />
                                     </div>
+
                                     <div className="form-group">
                                         <label>Hình ảnh</label>
                                         {formData.imageUrl && (
                                             <div className="mb-2 text-center">
-                                                <img
-                                                    src={formData.imageUrl}
-                                                    alt="Preview"
-                                                    style={{ maxHeight: '140px', maxWidth: '100%', borderRadius: '6px', border: '1px solid #dee2e6', objectFit: 'contain' }}
-                                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                                    onLoad={(e) => { e.target.style.display = 'inline'; }}
+                                                <img src={formData.imageUrl} alt="Preview"
+                                                    style={{ maxHeight: 140, maxWidth: '100%', borderRadius: 6, border: '1px solid #dee2e6', objectFit: 'contain' }}
+                                                    onError={e => { e.target.style.display = 'none'; }}
                                                 />
                                             </div>
                                         )}
-                                        <input
-                                            type="text"
-                                            className="form-control mb-2"
+                                        <input type="text" className="form-control mb-2"
                                             value={formData.imageUrl}
-                                            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                                            onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
                                             placeholder="Nhập link hình ảnh (https://...)"
                                         />
-                                        <div className="d-flex align-items-center mb-2">
-                                            <hr style={{ flex: 1, margin: 0 }} />
-                                            <span className="px-2 text-muted small">hoặc tải ảnh lên</span>
-                                            <hr style={{ flex: 1, margin: 0 }} />
-                                        </div>
                                         <div className="d-flex align-items-center">
-                                            <label className={`btn btn-outline-secondary btn-sm mb-0 ${uploadingImage ? 'disabled' : ''}`} style={{ cursor: uploadingImage ? 'not-allowed' : 'pointer' }}>
-                                                {uploadingImage ? (
-                                                    <><span className="spinner-border spinner-border-sm mr-1" role="status"></span>Đang tải...</>
-                                                ) : (
-                                                    <><i className="fas fa-upload mr-1"></i>Chọn ảnh từ máy</>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    style={{ display: 'none' }}
-                                                    onChange={handleImageUpload}
-                                                    disabled={uploadingImage}
-                                                />
+                                            <label className={`btn btn-outline-secondary btn-sm mb-0 ${uploadingImage ? 'disabled' : ''}`}>
+                                                {uploadingImage
+                                                    ? <><span className="spinner-border spinner-border-sm mr-1"></span>Đang tải...</>
+                                                    : <><i className="fas fa-upload mr-1"></i>Chọn ảnh từ máy</>
+                                                }
+                                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} disabled={uploadingImage} />
                                             </label>
                                             {formData.imageUrl && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-outline-danger btn-sm ml-2"
-                                                    onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                                                >
+                                                <button type="button" className="btn btn-outline-danger btn-sm ml-2"
+                                                    onClick={() => setFormData({ ...formData, imageUrl: '' })}>
                                                     <i className="fas fa-times mr-1"></i>Xóa ảnh
                                                 </button>
                                             )}
                                         </div>
-                                        <small className="text-muted">Hỗ trợ: jpg, png, gif, webp. Tối đa 5MB.</small>
                                     </div>
+
                                     <div className="form-group">
                                         <label>Nội dung chi tiết <span className="text-danger">*</span></label>
-                                        <textarea className="form-control" rows="6" value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} required />
+                                        {/* FIX 5: dùng ref + defaultValue để paste/ctrl+v hoạt động bình thường */}
+                                        <textarea
+                                            ref={contentRef}
+                                            className="form-control" rows="8"
+                                            defaultValue={formData.content}
+                                            placeholder="Nhập nội dung bài viết... (hỗ trợ dán văn bản Ctrl+V)"
+                                            required
+                                        />
+                                        <small className="text-muted">Có thể dán văn bản (Ctrl+V / Cmd+V) trực tiếp vào ô này.</small>
                                     </div>
+
                                     <div className="form-group form-check">
-                                        <input type="checkbox" className="form-check-input" id="isActiveCheck" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} />
+                                        <input type="checkbox" className="form-check-input" id="isActiveCheck"
+                                            checked={formData.isActive}
+                                            onChange={e => setFormData({ ...formData, isActive: e.target.checked })} />
                                         <label className="form-check-label" htmlFor="isActiveCheck">Hiển thị bài viết (IsActive)</label>
                                     </div>
                                 </div>

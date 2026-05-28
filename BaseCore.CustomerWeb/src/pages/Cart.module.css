@@ -333,6 +333,33 @@
   letter-spacing: 0.04em;
 }
 
+.inputGroup {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputGroup input {
+  flex: 1;
+  padding-right: 40px;
+}
+
+.clearBtn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.clearBtn:hover {
+  color: #dc2626;
+}
+
 .formGroup input,
 .formGroup textarea {
   width: 100%;

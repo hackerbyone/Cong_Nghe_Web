@@ -32,6 +32,10 @@ export default function Cart() {
     }
   }, [user])
 
+  const handleClearName = () => {
+    setCheckoutData(prev => ({ ...prev, customerName: '' }))
+  }
+
   const shipping = total >= 500000 ? 0 : 35000
   const grandTotal = total + shipping
 
@@ -244,12 +248,24 @@ export default function Cart() {
 
                   <div className={styles.formGroup}>
                     <label>Tên khách hàng *</label>
-                    <input
-                      type="text"
-                      placeholder="Nhập tên của bạn"
-                      value={checkoutData.customerName}
-                      onChange={e => handleCheckoutChange('customerName', e.target.value)}
-                    />
+                    <div className={styles.inputGroup}>
+                      <input
+                        type="text"
+                        placeholder="Nhập tên của bạn"
+                        value={checkoutData.customerName}
+                        onChange={e => handleCheckoutChange('customerName', e.target.value)}
+                      />
+                      {checkoutData.customerName && (
+                        <button 
+                          type="button"
+                          className={styles.clearBtn}
+                          onClick={handleClearName}
+                          title="Xóa tên"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className={styles.formGroup}>

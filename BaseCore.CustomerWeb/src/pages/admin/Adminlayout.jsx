@@ -29,6 +29,17 @@ export default function AdminLayout({ children }) {
           </li>
         </ul>
         <ul className="navbar-nav ml-auto">
+          {/* FIX 4: Nút chuyển về giao diện khách hàng */}
+          <li className="nav-item mr-2">
+            <Link
+              to="/"
+              className="btn btn-sm btn-outline-info"
+              style={{ marginTop: 8 }}
+              title="Xem giao diện khách hàng"
+            >
+              <i className="fas fa-store mr-1"></i> Xem cửa hàng
+            </Link>
+          </li>
           <li className="nav-item dropdown">
             <a className="nav-link" data-toggle="dropdown" href="#">
               <i className="far fa-user"></i> {user?.username || user?.name || 'Admin'}
@@ -98,10 +109,11 @@ export default function AdminLayout({ children }) {
                   <p>Người dùng</p>
                 </Link>
               </li>
+              {/* FIX 4: Nút về cửa hàng nổi bật */}
               <li className="nav-item mt-3">
-                <Link to="/" className="nav-link">
-                  <i className="nav-icon fas fa-store"></i>
-                  <p>Xem cửa hàng</p>
+                <Link to="/" className="nav-link" style={{ background: 'rgba(168,213,240,0.15)', borderRadius: 6 }}>
+                  <i className="nav-icon fas fa-store" style={{ color: '#a8d5f0' }}></i>
+                  <p style={{ color: '#a8d5f0', fontWeight: 600 }}>← Về cửa hàng</p>
                 </Link>
               </li>
             </ul>
@@ -114,7 +126,6 @@ export default function AdminLayout({ children }) {
         {children}
       </div>
 
-      {/* Footer */}
       <footer className="main-footer">
         <strong>AquaViet Admin</strong> — BaseCore Sales System
       </footer>
