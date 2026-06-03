@@ -545,7 +545,6 @@ namespace BaseCore.APIService.Controllers
             [FromQuery] DateTime? to,
             [FromQuery] string groupBy = "month")
         {
-            // Chỉ lấy commit ghi nhận hao hụt (tank loss hoặc accessory loss)
             var q = _context.InventoryCommits
                 .Where(c => c.CommitMessage.StartsWith("Hao hụt") ||
                             c.CommitMessage.StartsWith("Hư hỏng/mất"));
@@ -555,22 +554,47 @@ namespace BaseCore.APIService.Controllers
 
             var commits = await q.OrderBy(c => c.Created).ToListAsync();
 
+            // Tra giá đơn vị qua TargetId → Tank/Accessory → Product.Price
+            var fishIds = commits.Where(c => c.TargetType == "Fish" && c.TargetId.HasValue)
+                .Select(c => c.TargetId!.Value).Distinct().ToList();
+            var accIds  = commits.Where(c => c.TargetType == "Accessory" && c.TargetId.HasValue)
+                .Select(c => c.TargetId!.Value).Distinct().ToList();
+
+            var fishPriceMap = await _context.TankFishTrackings
+                .Where(t => fishIds.Contains(t.Id))
+                .Include(t => t.Product)
+                .Select(t => new { t.Id, Price = t.Product != null ? t.Product.Price : 0m })
+                .ToDictionaryAsync(x => x.Id, x => x.Price);
+
+            var accPriceMap = await _context.Accessories
+                .Where(a => accIds.Contains(a.Id))
+                .Include(a => a.Product)
+                .Select(a => new { a.Id, Price = a.Product != null ? a.Product.Price : 0m })
+                .ToDictionaryAsync(x => x.Id, x => x.Price);
+
             var records = commits.Select(c =>
             {
-                var oldCount = c.TargetType == "Fish"
-                    ? ParseFishTotal(c.OldValue)
-                    : ParseAccQuantity(c.OldValue);
-                var newCount = c.TargetType == "Fish"
-                    ? ParseFishTotal(c.NewValue)
-                    : ParseAccQuantity(c.NewValue);
+                var oldCount = c.TargetType == "Fish" ? ParseFishTotal(c.OldValue)  : ParseAccQuantity(c.OldValue);
+                var newCount = c.TargetType == "Fish" ? ParseFishTotal(c.NewValue)  : ParseAccQuantity(c.NewValue);
+                var lossAmt  = Math.Max(0, oldCount - newCount);
+                var price    = c.TargetType == "Fish"
+                    ? (c.TargetId.HasValue && fishPriceMap.TryGetValue(c.TargetId.Value, out var fp) ? fp : 0m)
+                    : (c.TargetId.HasValue && accPriceMap.TryGetValue(c.TargetId.Value,  out var ap) ? ap : 0m);
+                // Trích lý do từ phần sau dấu " — " trong commit message
+                var reason = c.CommitMessage.Contains(" — ")
+                    ? c.CommitMessage[(c.CommitMessage.IndexOf(" — ") + 3)..].Trim()
+                    : "";
                 return new
                 {
                     c.TargetType,
                     c.TargetName,
                     c.CommitMessage,
+                    Reason     = reason,
                     c.StaffName,
                     c.Created,
-                    LossAmount = Math.Max(0, oldCount - newCount),
+                    LossAmount = lossAmt,
+                    UnitPrice  = price,
+                    TotalCost  = lossAmt * price,
                 };
             }).ToList();
 
@@ -582,15 +606,18 @@ namespace BaseCore.APIService.Controllers
                 .GroupBy(r => periodKey(r.Created))
                 .Select(g => new
                 {
-                    period       = g.Key,
-                    fishLoss     = g.Where(r => r.TargetType == "Fish").Sum(r => r.LossAmount),
-                    accLoss      = g.Where(r => r.TargetType == "Accessory").Sum(r => r.LossAmount),
-                    records      = g.OrderByDescending(r => r.Created)
-                                    .Select(r => new
-                                    {
-                                        r.TargetType, r.TargetName, r.CommitMessage,
-                                        r.StaffName, r.Created, r.LossAmount
-                                    })
+                    period    = g.Key,
+                    fishLoss  = g.Where(r => r.TargetType == "Fish").Sum(r => r.LossAmount),
+                    accLoss   = g.Where(r => r.TargetType == "Accessory").Sum(r => r.LossAmount),
+                    fishCost  = g.Where(r => r.TargetType == "Fish").Sum(r => r.TotalCost),
+                    accCost   = g.Where(r => r.TargetType == "Accessory").Sum(r => r.TotalCost),
+                    totalCost = g.Sum(r => r.TotalCost),
+                    records   = g.OrderByDescending(r => r.Created)
+                                  .Select(r => new
+                                  {
+                                      r.TargetType, r.TargetName, r.CommitMessage, r.Reason,
+                                      r.StaffName, r.Created, r.LossAmount, r.UnitPrice, r.TotalCost
+                                  })
                 })
                 .OrderByDescending(g => g.period)
                 .ToList();
@@ -600,7 +627,10 @@ namespace BaseCore.APIService.Controllers
                 periods,
                 totalFishLoss = records.Where(r => r.TargetType == "Fish").Sum(r => r.LossAmount),
                 totalAccLoss  = records.Where(r => r.TargetType == "Accessory").Sum(r => r.LossAmount),
-                totalRecords  = records.Count
+                totalFishCost = records.Where(r => r.TargetType == "Fish").Sum(r => r.TotalCost),
+                totalAccCost  = records.Where(r => r.TargetType == "Accessory").Sum(r => r.TotalCost),
+                totalCost     = records.Sum(r => r.TotalCost),
+                totalRecords  = records.Count,
             });
         }
 

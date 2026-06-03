@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { warehouseService } from '../../services/warehouse/warehouseService';
 import { productService } from '../../services/product/productService';
 import { useAuth } from '../../context/AuthContext';
+import { exportWarehouseReportToWord } from '../../services/warehouse/warehouseWordExport';
 
 const STATUS_LABELS = { Good: 'Tốt', Damaged: 'Hỏng', Maintenance: 'Đang sửa' };
 const STATUS_COLORS = { Good: 'success', Damaged: 'danger', Maintenance: 'warning' };
@@ -62,6 +63,7 @@ export default function Warehouse() {
   const [reportData, setReportData]       = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportExpanded, setReportExpanded] = useState({});
+  const [exportLoading, setExportLoading]   = useState(false);
 
   useEffect(() => { loadProducts(); }, []);
   useEffect(() => { if (activeTab === 'tanks') loadTanks(); },       [activeTab, tankPage]);
@@ -120,6 +122,15 @@ export default function Warehouse() {
       setReportData(res);
     } catch (e) { console.error(e); }
     finally { setReportLoading(false); }
+  };
+
+  const handleExportWord = async () => {
+    if (!reportData) return;
+    setExportLoading(true);
+    try {
+      await exportWarehouseReportToWord(reportData, reportFrom, reportTo, reportGroupBy);
+    } catch (e) { alert('Lỗi khi xuất file: ' + e.message); }
+    finally { setExportLoading(false); }
   };
 
   // ── Modal helpers ──────────────────────────────────────────────
@@ -519,10 +530,17 @@ export default function Warehouse() {
           {/* ─── Tab Báo cáo hao hụt ─────────────────────────── */}
           {activeTab === 'report' && (
             <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">
+              <div className="card-header d-flex justify-content-between align-items-center">
+                <h3 className="card-title mb-0">
                   <i className="fas fa-chart-bar mr-1"></i> Báo cáo hao hụt
                 </h3>
+                {reportData && (
+                  <button className="btn btn-success btn-sm" onClick={handleExportWord} disabled={exportLoading}>
+                    {exportLoading
+                      ? <><i className="fas fa-spinner fa-spin mr-1"></i> Đang xuất...</>
+                      : <><i className="fas fa-file-word mr-1"></i> Xuất Word (.docx)</>}
+                  </button>
+                )}
               </div>
               <div className="card-body">
                 {/* Bộ lọc */}
@@ -547,27 +565,46 @@ export default function Warehouse() {
 
                 {reportData && (
                   <>
-                    {/* Tóm tắt tổng */}
+                    {/* Tóm tắt tổng — 4 thẻ */}
                     <div className="row mb-4">
-                      <div className="col-md-4">
+                      <div className="col-md-3">
                         <div className="info-box bg-danger">
                           <span className="info-box-icon"><i className="fas fa-fish"></i></span>
                           <div className="info-box-content">
-                            <span className="info-box-text">Tổng hao hụt cá</span>
+                            <span className="info-box-text">Hao hụt cá</span>
                             <span className="info-box-number">{reportData.totalFishLoss} con</span>
+                            <span className="progress-description" style={{ fontSize: '0.8rem' }}>
+                              {(reportData.totalFishCost || 0).toLocaleString('vi-VN')} đ
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <div className="col-md-4">
+                      <div className="col-md-3">
                         <div className="info-box bg-warning">
                           <span className="info-box-icon"><i className="fas fa-tools"></i></span>
                           <div className="info-box-content">
-                            <span className="info-box-text">Tổng hao hụt phụ kiện/TB</span>
+                            <span className="info-box-text">Hao hụt PK/TB</span>
                             <span className="info-box-number">{reportData.totalAccLoss} cái</span>
+                            <span className="progress-description" style={{ fontSize: '0.8rem' }}>
+                              {(reportData.totalAccCost || 0).toLocaleString('vi-VN')} đ
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <div className="col-md-4">
+                      <div className="col-md-3">
+                        <div className="info-box bg-danger" style={{ background: '#6f42c1 !important' }}>
+                          <span className="info-box-icon" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                            <i className="fas fa-money-bill-wave"></i>
+                          </span>
+                          <div className="info-box-content">
+                            <span className="info-box-text">Tổng chi phí hao hụt</span>
+                            <span className="info-box-number" style={{ fontSize: '1rem' }}>
+                              {(reportData.totalCost || 0).toLocaleString('vi-VN')} đ
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-3">
                         <div className="info-box bg-secondary">
                           <span className="info-box-icon"><i className="fas fa-list"></i></span>
                           <div className="info-box-content">
@@ -582,60 +619,102 @@ export default function Warehouse() {
                     {reportData.periods.length === 0 ? (
                       <div className="text-center text-muted py-4">Không có dữ liệu hao hụt trong khoảng thời gian này</div>
                     ) : (
-                      <table className="table table-bordered table-hover table-sm">
-                        <thead className="thead-light">
-                          <tr>
-                            <th style={{ width: 120 }}>{reportGroupBy === 'day' ? 'Ngày' : 'Tháng'}</th>
-                            <th style={{ width: 130 }} className="text-center text-danger">Hao hụt cá (con)</th>
-                            <th style={{ width: 150 }} className="text-center text-warning">Hao hụt PK/TB (cái)</th>
-                            <th style={{ width: 80 }} className="text-center">Chi tiết</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {reportData.periods.map(p => (
-                            <React.Fragment key={p.period}>
-                              <tr>
-                                <td><strong>{p.period}</strong></td>
-                                <td className="text-center">
-                                  {p.fishLoss > 0
-                                    ? <span className="badge badge-danger">{p.fishLoss} con</span>
-                                    : <span className="text-muted">—</span>}
-                                </td>
-                                <td className="text-center">
-                                  {p.accLoss > 0
-                                    ? <span className="badge badge-warning">{p.accLoss} cái</span>
-                                    : <span className="text-muted">—</span>}
-                                </td>
-                                <td className="text-center">
-                                  <button className="btn btn-xs btn-outline-secondary"
-                                    onClick={() => setReportExpanded(prev => ({ ...prev, [p.period]: !prev[p.period] }))}>
-                                    <i className={`fas fa-chevron-${reportExpanded[p.period] ? 'up' : 'down'}`}></i>
-                                  </button>
-                                </td>
-                              </tr>
-                              {reportExpanded[p.period] && p.records.map((r, idx) => (
-                                <tr key={idx} className="bg-light">
-                                  <td className="pl-4 text-muted" style={{ fontSize: '0.85rem' }}>
-                                    {new Date(r.created).toLocaleString('vi-VN')}
+                      <div className="table-responsive">
+                        <table className="table table-bordered table-hover table-sm">
+                          <thead className="thead-dark">
+                            <tr>
+                              <th>{reportGroupBy === 'day' ? 'Ngày' : 'Tháng'}</th>
+                              <th className="text-center text-danger">Hao hụt cá</th>
+                              <th className="text-right">Chi phí cá</th>
+                              <th className="text-center text-warning">Hao hụt PK/TB</th>
+                              <th className="text-right">Chi phí PK/TB</th>
+                              <th className="text-right font-weight-bold">Tổng chi phí</th>
+                              <th className="text-center" style={{ width: 60 }}></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {reportData.periods.map(p => (
+                              <React.Fragment key={p.period}>
+                                <tr>
+                                  <td><strong>{p.period}</strong></td>
+                                  <td className="text-center">
+                                    {p.fishLoss > 0
+                                      ? <span className="badge badge-danger">{p.fishLoss} con</span>
+                                      : <span className="text-muted">—</span>}
                                   </td>
-                                  <td colSpan={2} style={{ fontSize: '0.85rem' }}>
-                                    <span className={`badge mr-1 ${r.targetType === 'Fish' ? 'badge-info' : 'badge-secondary'}`}>
-                                      {r.targetType === 'Fish' ? 'Cá' : 'PK/TB'}
-                                    </span>
-                                    <strong>{r.targetName}</strong>
-                                    <span className="ml-2 text-danger">-{r.lossAmount}</span>
-                                    <span className="ml-2 text-muted">{r.commitMessage.split('—')[1]?.trim()}</span>
+                                  <td className="text-right text-muted" style={{ fontSize: '0.9rem' }}>
+                                    {p.fishCost > 0 ? (p.fishCost).toLocaleString('vi-VN') + ' đ' : '—'}
                                   </td>
-                                  <td className="text-center text-muted" style={{ fontSize: '0.85rem' }}>
-                                    {r.staffName}
+                                  <td className="text-center">
+                                    {p.accLoss > 0
+                                      ? <span className="badge badge-warning">{p.accLoss} cái</span>
+                                      : <span className="text-muted">—</span>}
+                                  </td>
+                                  <td className="text-right text-muted" style={{ fontSize: '0.9rem' }}>
+                                    {p.accCost > 0 ? (p.accCost).toLocaleString('vi-VN') + ' đ' : '—'}
+                                  </td>
+                                  <td className="text-right">
+                                    <strong className="text-danger">
+                                      {(p.totalCost || 0).toLocaleString('vi-VN')} đ
+                                    </strong>
+                                  </td>
+                                  <td className="text-center">
+                                    <button className="btn btn-xs btn-outline-secondary"
+                                      onClick={() => setReportExpanded(prev => ({ ...prev, [p.period]: !prev[p.period] }))}>
+                                      <i className={`fas fa-chevron-${reportExpanded[p.period] ? 'up' : 'down'}`}></i>
+                                    </button>
                                   </td>
                                 </tr>
-                              ))}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
+                                {reportExpanded[p.period] && p.records.map((r, idx) => (
+                                  <tr key={idx} style={{ background: '#f8f9fa', fontSize: '0.85rem' }}>
+                                    <td className="pl-4 text-muted">
+                                      {new Date(r.created).toLocaleString('vi-VN')}
+                                    </td>
+                                    <td colSpan={2}>
+                                      <span className={`badge mr-1 ${r.targetType === 'Fish' ? 'badge-info' : 'badge-secondary'}`}>
+                                        {r.targetType === 'Fish' ? 'Cá' : 'PK/TB'}
+                                      </span>
+                                      <strong>{r.targetName}</strong>
+                                      <span className="ml-2 text-danger">-{r.lossAmount}</span>
+                                      {r.unitPrice > 0 && (
+                                        <span className="ml-2 text-muted">
+                                          × {(r.unitPrice).toLocaleString('vi-VN')} đ
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td colSpan={2} className="text-muted">
+                                      <i>{r.reason || r.commitMessage.split('—')[1]?.trim()}</i>
+                                    </td>
+                                    <td className="text-right">
+                                      {r.totalCost > 0
+                                        ? <strong className="text-danger">{(r.totalCost).toLocaleString('vi-VN')} đ</strong>
+                                        : <span className="text-muted">—</span>}
+                                    </td>
+                                    <td className="text-muted text-center">{r.staffName}</td>
+                                  </tr>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                            {/* Dòng tổng cộng */}
+                            <tr className="table-active font-weight-bold">
+                              <td>TỔNG CỘNG</td>
+                              <td className="text-center text-danger">{reportData.totalFishLoss} con</td>
+                              <td className="text-right">{(reportData.totalFishCost || 0).toLocaleString('vi-VN')} đ</td>
+                              <td className="text-center text-warning">{reportData.totalAccLoss} cái</td>
+                              <td className="text-right">{(reportData.totalAccCost || 0).toLocaleString('vi-VN')} đ</td>
+                              <td className="text-right text-danger">{(reportData.totalCost || 0).toLocaleString('vi-VN')} đ</td>
+                              <td></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     )}
+
+                    <small className="text-muted">
+                      <i className="fas fa-info-circle mr-1"></i>
+                      Chi phí ước tính dựa trên đơn giá hiện tại của sản phẩm trong hệ thống.
+                      Nhấn <i className="fas fa-chevron-down"></i> để xem chi tiết từng lần ghi nhận.
+                    </small>
                   </>
                 )}
 
