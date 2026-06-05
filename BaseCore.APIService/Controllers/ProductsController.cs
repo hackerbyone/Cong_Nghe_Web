@@ -57,10 +57,14 @@ namespace BaseCore.APIService.Controllers
         public async Task<IActionResult> GetAll(
             [FromQuery] string? keyword,
             [FromQuery] int? categoryId,
+            [FromQuery] decimal? minPrice,
+            [FromQuery] decimal? maxPrice,
+            [FromQuery] string? sortBy,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            var (products, totalCount) = await _productRepository.SearchAsync(keyword, categoryId, page, pageSize);
+            var (products, totalCount) = await _productRepository.SearchAsync(
+                keyword, categoryId, minPrice, maxPrice, sortBy, page, pageSize);
 
             var ratings = await GetRatingsAsync(products.Select(p => p.Id));
 

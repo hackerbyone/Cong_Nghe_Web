@@ -1,12 +1,15 @@
 import { buildUrl, getHeaders, handleResponse } from '../utils/apiClient';
 
 export const productService = {
-  getAll: async (keyword = '', categoryId = null, page = 1, pageSize = 12) => {
+  getAll: async (keyword = '', categoryId = null, page = 1, pageSize = 12, minPrice = null, maxPrice = null, sortBy = null) => {
     const params = {};
     if (keyword) params.keyword = keyword;
     if (categoryId) params.categoryId = categoryId;
     params.page = page;
     params.pageSize = pageSize;
+    if (minPrice != null && minPrice > 0) params.minPrice = minPrice;
+    if (maxPrice != null && maxPrice > 0) params.maxPrice = maxPrice;
+    if (sortBy && sortBy !== 'default' && sortBy !== 'rating') params.sortBy = sortBy;
 
     const response = await fetch(buildUrl('/api/products', params), {
       method: 'GET',

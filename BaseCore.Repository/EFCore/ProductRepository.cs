@@ -8,7 +8,11 @@ namespace BaseCore.Repository.EFCore
     /// </summary>
     public interface IProductRepositoryEF : IRepository<Product>
     {
-        Task<(List<Product> Products, int TotalCount)> SearchAsync(string? keyword, int? categoryId, int page, int pageSize);
+        Task<(List<Product> Products, int TotalCount)> SearchAsync(
+            string? keyword, int? categoryId,
+            decimal? minPrice, decimal? maxPrice,
+            string? sortBy,
+            int page, int pageSize);
         Task<List<Product>> GetByCategoryAsync(int categoryId);
         Task GetProducts();
     }
@@ -19,7 +23,11 @@ namespace BaseCore.Repository.EFCore
         {
         }
 
-        public async Task<(List<Product> Products, int TotalCount)> SearchAsync(string? keyword, int? categoryId, int page, int pageSize)
+        public async Task<(List<Product> Products, int TotalCount)> SearchAsync(
+            string? keyword, int? categoryId,
+            decimal? minPrice, decimal? maxPrice,
+            string? sortBy,
+            int page, int pageSize)
         {
             var query = _dbSet.Include(p => p.Category).AsQueryable();
 
@@ -32,14 +40,24 @@ namespace BaseCore.Repository.EFCore
             }
 
             if (categoryId.HasValue && categoryId > 0)
-            {
                 query = query.Where(p => p.CategoryId == categoryId);
-            }
+
+            if (minPrice.HasValue && minPrice > 0)
+                query = query.Where(p => p.Price >= minPrice.Value);
+
+            if (maxPrice.HasValue && maxPrice > 0)
+                query = query.Where(p => p.Price <= maxPrice.Value);
 
             var totalCount = await query.CountAsync();
 
+            query = sortBy switch
+            {
+                "price-asc"  => query.OrderBy(p => p.Price),
+                "price-desc" => query.OrderByDescending(p => p.Price),
+                _            => query.OrderByDescending(p => p.Id)
+            };
+
             var products = await query
-                .OrderByDescending(p => p.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
