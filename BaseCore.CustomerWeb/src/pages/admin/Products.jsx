@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { productService } from '../../services/product/productService';
+import { createPortal } from 'react-dom';
+import { productService } from '../../services/product/productService'; 
 import { categoryService } from '../../services/category/categoryService';
 import { uploadService } from '../../services/upload/uploadService';
 import { useAuth } from '../../context/AuthContext';
@@ -75,6 +76,7 @@ const Products = () => {
     };
 
     const openModal = (product = null) => {
+        document.body.classList.add('modal-open');
         if (product) {
             setEditingProduct(product);
             setFormData({
@@ -109,6 +111,7 @@ const Products = () => {
     };
 
     const closeModal = () => {
+        document.body.classList.remove('modal-open');
         setShowModal(false);
         setEditingProduct(null);
         setError('');
@@ -385,9 +388,9 @@ const Products = () => {
             </section>
 
             {/* Modal Thêm/Sửa */}
-            {showModal && (
+            {showModal && createPortal(
                 <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
-                    <div className="modal-dialog">
+                    <div className="modal-dialog modal-lg modal-dialog-scrollable">
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title">
@@ -398,8 +401,8 @@ const Products = () => {
                                     <span>&times;</span>
                                 </button>
                             </div>
-                            <form onSubmit={handleSubmit}>
-                                <div className="modal-body">
+                            <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
+                                <div className="modal-body" style={{ overflowY: 'auto' }}>
                                     {error && (
                                         <div className="alert alert-danger">
                                             <i className="fas fa-exclamation-circle mr-2"></i>{error}
@@ -662,9 +665,13 @@ const Products = () => {
                             </form>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
-            {showModal && <div className="modal-backdrop fade show"></div>}
+            {showModal && createPortal(
+                <div className="modal-backdrop fade show"></div>,
+                document.body
+            )}
         </>
     );
 };
