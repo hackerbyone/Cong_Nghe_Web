@@ -27,6 +27,8 @@ export default function Products() {
   const [error, setError] = useState(null)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
+  const [allProductCount, setAllProductCount] = useState(null)
+  const [categoryCounts, setCategoryCounts] = useState({})
 
   const commitPrice = () => {
     setMinPrice(minVal > 0 ? minVal : null)
@@ -79,10 +81,31 @@ export default function Products() {
   }, [])
 
   useEffect(() => {
+    productService.getAll('', null, 1, 1)
+      .then(res => setAllProductCount(res.totalCount || 0))
+      .catch(() => setAllProductCount(0))
+  }, [])
+
+  useEffect(() => {
     categoryService.getAll()
       .then(res => setCategories(res))
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (categories.length === 0) return
+    Promise.all(
+      categories.map(c =>
+        productService.getAll('', c.id, 1, 1)
+          .then(res => ({ id: c.id, count: res.totalCount || 0 }))
+          .catch(() => ({ id: c.id, count: 0 }))
+      )
+    ).then(results => {
+      const counts = {}
+      results.forEach(r => { counts[r.id] = r.count })
+      setCategoryCounts(counts)
+    })
+  }, [categories])
 
   // rating sort là client-side (sắp xếp trong trang hiện tại)
   const displayed = sort === 'rating'
@@ -109,7 +132,7 @@ export default function Products() {
               className={`${styles.catBtn} ${!catFilter ? styles.active : ''}`}
               onClick={() => handleCategoryClick('all')}
             >
-              Tất cả ({totalCount})
+              Tất cả ({allProductCount !== null ? allProductCount : '...'})
             </button>
             {categories.map(c => (
               <button
@@ -117,7 +140,7 @@ export default function Products() {
                 className={`${styles.catBtn} ${catFilter === c.id.toString() ? styles.active : ''}`}
                 onClick={() => handleCategoryClick(c.id)}
               >
-                📦 {c.name}
+                📦 {c.name} ({categoryCounts[c.id] !== undefined ? categoryCounts[c.id] : '...'})
               </button>
             ))}
           </div>
