@@ -51,4 +51,12 @@ export const productService = {
     });
     return handleResponse(response, 'Failed to delete product');
   },
+
+  getMaxPrice: async () => {
+    const response = await fetch(buildUrl('/api/products/max-price'), {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(response, 'Failed to fetch max price');
+  },
 };

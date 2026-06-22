@@ -98,6 +98,14 @@ namespace BaseCore.APIService.Controllers
             });
         }
 
+        [HttpGet("max-price")]
+        public async Task<IActionResult> GetMaxPrice()
+        {
+            var max = await _context.Products.MaxAsync(p => (decimal?)p.Price) ?? 0;
+            var ceiling = Math.Ceiling(max / 100000m) * 100000m;
+            return Ok(new { maxPrice = ceiling });
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
