@@ -50,8 +50,14 @@ export function AuthProvider({ children }) {
   const isWarehouse = () => hasRole('warehouse') || hasRole('Warehouse')
   const isAdminOrWarehouse = () => isAdmin() || isWarehouse()
 
+  const updateUser = (partial) => {
+    const updated = { ...user, ...partial }
+    setUser(updated)
+    sessionStorage.setItem('auth', JSON.stringify(updated))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, hasRole, isAdmin, isWarehouse, isAdminOrWarehouse }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, hasRole, isAdmin, isWarehouse, isAdminOrWarehouse, updateUser }}>
       {children}
     </AuthContext.Provider>
   )

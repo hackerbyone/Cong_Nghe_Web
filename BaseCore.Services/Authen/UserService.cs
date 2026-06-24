@@ -17,6 +17,7 @@ namespace BaseCore.Services.Authen
         Task Update(User user, string password = null);
         Task Delete(string id);
         Task<(List<User> Users, int TotalCount)> Search(string keyword, int page, int pageSize);
+        Task<bool> VerifyPassword(string userId, string password);
     }
 
     public class UserService : IUserService
@@ -116,6 +117,17 @@ namespace BaseCore.Services.Authen
         public async Task<(List<User> Users, int TotalCount)> Search(string keyword, int page, int pageSize)
         {
             return await _userRepository.SearchAsync(keyword, page, pageSize);
+        }
+
+        public async Task<bool> VerifyPassword(string userId, string password)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) return false;
+
+            if (user.Salt != null && user.Salt.Length > 0)
+                return TokenHelper.IsValidPassword(password, user.Salt, user.Password);
+
+            return user.Password == password;
         }
     }
 }

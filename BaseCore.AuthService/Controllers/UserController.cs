@@ -4,6 +4,7 @@ using BaseCore.Entities;
 using BaseCore.Services.Authen;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace BaseCore.AuthService.Controllers
@@ -157,6 +158,85 @@ namespace BaseCore.AuthService.Controllers
             });
         }
 
+        // ── GET /api/users/me — User tự xem thông tin ──
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMe()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                      ?? User.FindFirst("sub")?.Value
+                      ?? User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var user = await _userService.GetById(userId);
+            if (user == null) return NotFound(new { message = "User not found" });
+
+            return Ok(new UserResponse
+            {
+                Id = user.Id,
+                Username = user.UserName,
+                Name = user.Name,
+                Email = user.Email,
+                Phone = user.Phone,
+                Position = user.Position,
+                IsActive = user.IsActive,
+                UserType = user.UserType,
+                Created = user.Created
+            });
+        }
+
+        // ── PUT /api/users/me — User tự cập nhật thông tin ──
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateMe([FromBody] UpdateProfileRequest request)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                      ?? User.FindFirst("sub")?.Value
+                      ?? User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var user = await _userService.GetById(userId);
+            if (user == null) return NotFound(new { message = "User not found" });
+
+            user.Name  = request.Name?.Trim()  ?? user.Name;
+            user.Email = request.Email?.Trim() ?? user.Email;
+            user.Phone = request.Phone?.Trim() ?? user.Phone;
+
+            // Đổi mật khẩu nếu có truyền oldPassword + newPassword
+            string? newPwd = null;
+            if (!string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                if (string.IsNullOrWhiteSpace(request.OldPassword))
+                    return BadRequest(new { message = "Vui lòng nhập mật khẩu hiện tại" });
+
+                var verified = await _userService.VerifyPassword(userId, request.OldPassword);
+                if (!verified)
+                    return BadRequest(new { message = "Mật khẩu hiện tại không đúng" });
+
+                if (request.NewPassword.Length < 6)
+                    return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 6 ký tự" });
+
+                newPwd = request.NewPassword;
+            }
+
+            await _userService.Update(user, newPwd);
+
+            return Ok(new
+            {
+                message = "Cập nhật thông tin thành công",
+                user = new UserResponse
+                {
+                    Id = user.Id,
+                    Username = user.UserName,
+                    Name = user.Name,
+                    Email = user.Email,
+                    Phone = user.Phone,
+                    Position = user.Position,
+                    IsActive = user.IsActive,
+                    UserType = user.UserType,
+                    Created = user.Created
+                }
+            });
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(string id)
@@ -205,5 +285,14 @@ namespace BaseCore.AuthService.Controllers
         public string Position { get; set; }
         public int? UserType { get; set; }
         public bool? IsActive { get; set; }
+    }
+
+    public class UpdateProfileRequest
+    {
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? OldPassword { get; set; }
+        public string? NewPassword { get; set; }
     }
 }

@@ -93,6 +93,21 @@ export default function Header() {
                     <p>{user.email}</p>
                   </div>
 
+                  <Link
+                    to="/profile"
+                    style={{ display: 'block', padding: '8px 12px', textDecoration: 'none', color: '#333', borderRadius: 6 }}
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    👤 Thông tin tài khoản
+                  </Link>
+                  <Link
+                    to="/orders"
+                    style={{ display: 'block', padding: '8px 12px', textDecoration: 'none', color: '#333', borderRadius: 6 }}
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    📦 Đơn hàng của tôi
+                  </Link>
+
                   <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #eee' }} />
 
                   {isAdmin() && (

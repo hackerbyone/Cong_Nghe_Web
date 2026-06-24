@@ -57,4 +57,21 @@ export const userService = {
     });
     return handleResponse(response, 'Failed to change password');
   },
+
+  getMe: async () => {
+    const response = await fetch(buildUrl('/api/users/me'), {
+      method: 'GET',
+      headers: getHeaders(true),
+    });
+    return handleResponse(response, 'Failed to fetch profile');
+  },
+
+  updateMe: async (data) => {
+    const response = await fetch(buildUrl('/api/users/me'), {
+      method: 'PUT',
+      headers: getHeaders(true),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response, 'Failed to update profile');
+  },
 };

@@ -15,6 +15,7 @@ import BlogDetail from './pages/BlogDetail'
 import Login from './pages/Login'
 import OrderHistory from './pages/OrderHistory'
 import Payment from './pages/Payment'
+import Profile from './pages/Profile'
 
 // Admin pages
 import Dashboard from './pages/admin/Dashboard'
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/orders" element={<CustomerLayout><OrderHistory /></CustomerLayout>} />
             <Route path="/payment/:orderId" element={<CustomerLayout><Payment /></CustomerLayout>} />
+            <Route path="/profile" element={<CustomerLayout><Profile /></CustomerLayout>} />
 
             {/* Admin */}
             <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />
