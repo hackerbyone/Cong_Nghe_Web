@@ -307,94 +307,79 @@ const Products = () => {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="table-responsive">
-                                        <table className="table table-bordered table-striped table-hover table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th style={{ width: '60px' }}>Ảnh</th>
-                                                    <th style={{ width: '60px' }}>ID</th>
-                                                    <th>Tên sản phẩm</th>
-                                                    <th>Danh mục</th>
-                                                    <th>Giá</th>
-                                                    <th>Kho</th>
-                                                    {isAdmin() && <th style={{ width: '90px' }}>Thao tác</th>}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {products.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={isAdmin() ? 7 : 6} className="text-center py-4 text-muted">
-                                                            <i className="fas fa-box-open fa-2x mb-2 d-block"></i>
-                                                            Không tìm thấy sản phẩm nào
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    products.map(product => (
-                                                        <tr key={product.id}>
-                                                            <td className="text-center">
-                                                                {product.imageUrl ? (
-                                                                    <img
-                                                                        src={product.imageUrl}
-                                                                        alt={product.name}
-                                                                        style={{
-                                                                            width: '46px',
-                                                                            height: '46px',
-                                                                            objectFit: 'cover',
-                                                                            borderRadius: '6px',
-                                                                            border: '1px solid #e0eaf3'
-                                                                        }}
-                                                                    />
-                                                                ) : (
-                                                                    <div style={{
-                                                                        width: '46px', height: '46px',
-                                                                        background: '#e8f4fd',
-                                                                        borderRadius: '6px',
-                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                        margin: '0 auto'
-                                                                    }}>
-                                                                        <i className="fas fa-image text-muted" style={{ fontSize: '1rem' }}></i>
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                            <td className="text-muted">{product.id}</td>
-                                                            <td><strong>{product.name}</strong></td>
-                                                            <td>
-                                                                <span className="badge badge-light" style={{ background: '#e8f4fd', color: '#3d8bc2', border: '1px solid #a8d5f0' }}>
+                                    {products.length === 0 ? (
+                                        <div className="text-center py-5 text-muted">
+                                            <i className="fas fa-box-open fa-3x mb-3 d-block"></i>
+                                            Không tìm thấy sản phẩm nào
+                                        </div>
+                                    ) : (
+                                        <div className="row">
+                                            {products.map(product => (
+                                                <div key={product.id} className="col-xl-3 col-lg-4 col-md-6 col-sm-6 mb-4">
+                                                    <div className="card h-100 shadow-sm" style={{ border: '1px solid #e0eaf3', borderRadius: '10px', overflow: 'hidden' }}>
+                                                        <div style={{ position: 'relative', height: '180px', background: '#f0f6fb', overflow: 'hidden' }}>
+                                                            {product.imageUrl ? (
+                                                                <img
+                                                                    src={product.imageUrl}
+                                                                    alt={product.name}
+                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                />
+                                                            ) : (
+                                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <i className="fas fa-image text-muted" style={{ fontSize: '2.5rem' }}></i>
+                                                                </div>
+                                                            )}
+                                                            <span
+                                                                className={`badge ${product.stock > 10 ? 'badge-success' : product.stock > 0 ? 'badge-warning' : 'badge-danger'}`}
+                                                                style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '0.75rem' }}
+                                                            >
+                                                                Kho: {product.stock}
+                                                            </span>
+                                                            <span
+                                                                className="badge badge-secondary"
+                                                                style={{ position: 'absolute', top: '8px', left: '8px', fontSize: '0.7rem', opacity: 0.8 }}
+                                                            >
+                                                                #{product.id}
+                                                            </span>
+                                                        </div>
+                                                        <div className="card-body d-flex flex-column p-3">
+                                                            <h6 className="card-title mb-1" style={{ fontWeight: 700, fontSize: '0.92rem', lineHeight: 1.3, minHeight: '2.4em' }}>
+                                                                {product.name}
+                                                            </h6>
+                                                            <div className="mb-2">
+                                                                <span className="badge badge-light" style={{ background: '#e8f4fd', color: '#3d8bc2', border: '1px solid #a8d5f0', fontSize: '0.73rem' }}>
                                                                     {getProductCategoryName(product)}
                                                                 </span>
-                                                            </td>
-                                                            <td style={{ fontWeight: 700, color: '#dc3545' }}>
-                                                                {product.price?.toLocaleString('vi-VN')} đ
-                                                            </td>
-                                                            <td>
-                                                                <span className={`badge ${product.stock > 10 ? 'badge-success' : product.stock > 0 ? 'badge-warning' : 'badge-danger'}`}>
-                                                                    {product.stock}
-                                                                </span>
-                                                            </td>
-                                                            {isAdmin() && (
-                                                                <td className="text-center">
-                                                                    <button
-                                                                        className="btn btn-warning btn-xs mr-1"
-                                                                        onClick={() => openModal(product)}
-                                                                        title="Chỉnh sửa"
-                                                                    >
-                                                                        <i className="fas fa-edit"></i>
-                                                                    </button>
-                                                                    <button
-                                                                        className="btn btn-danger btn-xs"
-                                                                        onClick={() => handleDelete(product.id)}
-                                                                        title="Xóa"
-                                                                    >
-                                                                        <i className="fas fa-trash"></i>
-                                                                    </button>
-                                                                </td>
-                                                            )}
-                                                        </tr>
-                                                    ))
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                            </div>
+                                                            <div className="mt-auto">
+                                                                <div style={{ fontWeight: 700, color: '#dc3545', fontSize: '1rem' }}>
+                                                                    {product.price?.toLocaleString('vi-VN')} đ
+                                                                </div>
+                                                                {isAdmin() && (
+                                                                    <div className="d-flex mt-2" style={{ gap: '6px' }}>
+                                                                        <button
+                                                                            className="btn btn-warning btn-sm flex-fill"
+                                                                            onClick={() => openModal(product)}
+                                                                            title="Chỉnh sửa"
+                                                                        >
+                                                                            <i className="fas fa-edit mr-1"></i>Sửa
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-danger btn-sm flex-fill"
+                                                                            onClick={() => handleDelete(product.id)}
+                                                                            title="Xóa"
+                                                                        >
+                                                                            <i className="fas fa-trash mr-1"></i>Xóa
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
 
                                     <div className="d-flex justify-content-between align-items-center mt-3">
                                         <span className="text-muted">
