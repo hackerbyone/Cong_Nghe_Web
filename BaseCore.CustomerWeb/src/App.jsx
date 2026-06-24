@@ -26,7 +26,6 @@ import AdminUsers from './pages/admin/Users'
 import AdminOrders from './pages/admin/Orders'
 import AdminStatistics from './pages/admin/Statistics'
 import Warehouse from './pages/admin/Warehouse'
-import FishBatches from './pages/admin/FishBatches'
 import InternalNotifications from './pages/admin/InternalNotifications'
 
 // Guard: chỉ cho vào nếu đã login và là admin
@@ -86,7 +85,6 @@ export default function App() {
             <Route path="/admin/statistics" element={<AdminRoute><AdminStatistics /></AdminRoute>} />
             <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
             <Route path="/admin/warehouse" element={<WarehouseRoute><Warehouse /></WarehouseRoute>} />
-            <Route path="/admin/fish-batches" element={<WarehouseRoute><FishBatches /></WarehouseRoute>} />
             <Route path="/admin/internal-notifications" element={<AdminRoute><InternalNotifications /></AdminRoute>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

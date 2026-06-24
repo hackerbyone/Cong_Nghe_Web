@@ -93,13 +93,6 @@ export default function AdminLayout({ children }) {
                   <p>Quản lý kho</p>
                 </Link>
               </li>
-              <li className="nav-item">
-                <Link to="/admin/fish-batches" className={isActive('/admin/fish-batches')}>
-                  <i className="nav-icon fas fa-fish"></i>
-                  <p>Lô nhập cá</p>
-                </Link>
-              </li>
-
               {/* Menu chỉ dành cho Admin */}
               {isAdmin() && (
                 <>
