@@ -96,8 +96,11 @@ export default function Orders() {
   const [updating, setUpdating]     = useState(false);
   const [error, setError]           = useState('');
   const [confirm, setConfirm]       = useState(null); // { message, onConfirm }
+  const [page, setPage]             = useState(1);
+  const PAGE_SIZE = 10;
 
   useEffect(() => { loadOrders(); }, []);
+  useEffect(() => { setPage(1); }, [filterStatus, keyword, fromDay, fromMonth, fromYear, toDay, toMonth, toYear]);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -197,6 +200,9 @@ export default function Orders() {
   });
 
   const countBy = (s) => orders.filter(o => o.status === s).length;
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -371,7 +377,7 @@ export default function Orders() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map(order => {
+                      {paginated.map(order => {
                         const st = statusLabel(order.status);
                         return (
                           <tr key={order.id}>
@@ -420,6 +426,53 @@ export default function Orders() {
                 </div>
               )}
             </div>
+            {!loading && filtered.length > 0 && (
+              <div className="card-footer d-flex justify-content-between align-items-center">
+                <span className="text-muted small">
+                  Hiển thị <strong>{(page - 1) * PAGE_SIZE + 1}</strong>–<strong>{Math.min(page * PAGE_SIZE, filtered.length)}</strong> / <strong>{filtered.length}</strong> đơn hàng
+                </span>
+                <ul className="pagination pagination-sm mb-0">
+                  <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setPage(1)} disabled={page === 1}>
+                      <i className="fas fa-angle-double-left"></i>
+                    </button>
+                  </li>
+                  <li className={`page-item ${page === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setPage(p => p - 1)} disabled={page === 1}>
+                      <i className="fas fa-angle-left"></i>
+                    </button>
+                  </li>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                    .reduce((acc, p, idx, arr) => {
+                      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                      acc.push(p);
+                      return acc;
+                    }, [])
+                    .map((p, idx) =>
+                      p === '...' ? (
+                        <li key={`ellipsis-${idx}`} className="page-item disabled">
+                          <span className="page-link">…</span>
+                        </li>
+                      ) : (
+                        <li key={p} className={`page-item ${page === p ? 'active' : ''}`}>
+                          <button className="page-link" onClick={() => setPage(p)}>{p}</button>
+                        </li>
+                      )
+                    )}
+                  <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setPage(p => p + 1)} disabled={page === totalPages}>
+                      <i className="fas fa-angle-right"></i>
+                    </button>
+                  </li>
+                  <li className={`page-item ${page === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setPage(totalPages)} disabled={page === totalPages}>
+                      <i className="fas fa-angle-double-right"></i>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </section>

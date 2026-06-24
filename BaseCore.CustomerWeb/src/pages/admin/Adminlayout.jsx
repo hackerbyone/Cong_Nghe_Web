@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import './admin.css'
@@ -6,6 +7,13 @@ export default function AdminLayout({ children }) {
   const { user, logout, isAdmin, isWarehouse } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    document.body.classList.add('layout-fixed', 'layout-navbar-fixed')
+    return () => {
+      document.body.classList.remove('layout-fixed', 'layout-navbar-fixed')
+    }
+  }, [])
 
   const handleLogout = () => {
     logout()
