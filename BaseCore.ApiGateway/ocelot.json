@@ -120,7 +120,7 @@
       "DownstreamPathTemplate": "/api/blogs",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        { "Host": "localhost", "Port": 5001 }
+        { "Host": "localhost", "Port": 5005 }
       ],
       "UpstreamPathTemplate": "/api/blogs",
       "UpstreamHttpMethod": [ "GET", "POST", "OPTIONS" ]
@@ -129,7 +129,7 @@
       "DownstreamPathTemplate": "/api/blogs/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        { "Host": "localhost", "Port": 5001 }
+        { "Host": "localhost", "Port": 5005 }
       ],
       "UpstreamPathTemplate": "/api/blogs/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ]
@@ -140,7 +140,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5001
+          "Port": 5006
         }
       ],
       "UpstreamPathTemplate": "/api/cart/{everything}",
@@ -152,7 +152,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5001
+          "Port": 5006
         }
       ],
       "UpstreamPathTemplate": "/api/cart",
@@ -162,10 +162,28 @@
       "DownstreamPathTemplate": "/api/statistics/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
-        { "Host": "localhost", "Port": 5001 }
+        { "Host": "localhost", "Port": 5007 }
       ],
       "UpstreamPathTemplate": "/api/statistics/{everything}",
       "UpstreamHttpMethod": [ "GET", "OPTIONS" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/chatbot/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5007 }
+      ],
+      "UpstreamPathTemplate": "/api/chatbot/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "OPTIONS" ]
+    },
+    {
+      "DownstreamPathTemplate": "/api/chatbot",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        { "Host": "localhost", "Port": 5007 }
+      ],
+      "UpstreamPathTemplate": "/api/chatbot",
+      "UpstreamHttpMethod": [ "GET", "POST", "OPTIONS" ]
     },
     {
       "DownstreamPathTemplate": "/api/warehouse/{everything}",

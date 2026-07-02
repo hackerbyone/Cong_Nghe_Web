@@ -62,7 +62,12 @@ namespace BaseCore.Services
                     Quantity = i.Quantity,
                     AvailableStock = i.Product is null ? 0 : GetAvailableStock(i.Product, i.SelectedGender),
                     ImageUrl = i.Product?.ImageUrl ?? string.Empty,
-                    SelectedGender = i.SelectedGender
+                    SelectedGender = i.SelectedGender,
+                    PhMin = i.Product?.PhMin,
+                    PhMax = i.Product?.PhMax,
+                    TempMin = i.Product?.TempMin,
+                    TempMax = i.Product?.TempMax,
+                    Compatibility = i.Product?.Compatibility
                 }).ToList(),
                 TotalAmount = cart.Items.Sum(i =>
                     GetEffectivePrice(i.Product, i.SelectedGender) * i.Quantity),

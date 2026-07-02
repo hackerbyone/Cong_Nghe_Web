@@ -26,6 +26,84 @@ export default function Cart() {
   const [checkoutError, setCheckoutError] = useState(null)
   const [stockNotice, setStockNotice] = useState('')
   const [shippingMethod, setShippingMethod] = useState('Standard')
+  const [compatWarnings, setCompatWarnings] = useState([])
+
+  useEffect(() => {
+    if (!cart || cart.length === 0) {
+      setCompatWarnings([])
+      return
+    }
+
+    const warnings = []
+    const liveItems = cart.filter(i => i.phMin != null || i.phMax != null || i.tempMin != null || i.tempMax != null)
+
+    if (liveItems.length > 1) {
+      // 1. Kiểm tra pH trùng khớp
+      for (let i = 0; i < liveItems.length; i++) {
+        for (let j = i + 1; j < liveItems.length; j++) {
+          const a = liveItems[i]
+          const b = liveItems[j]
+          if (a.phMin != null && a.phMax != null && b.phMin != null && b.phMax != null) {
+            const overlap = !(a.phMin > b.phMax || b.phMin > a.phMax)
+            if (!overlap) {
+              warnings.push({
+                type: 'danger',
+                text: `🧪 Không tương thích pH: "${a.name}" (pH ${a.phMin} - ${a.phMax}) và "${b.name}" (pH ${b.phMin} - ${b.phMax}) cần môi trường pH khác nhau. Nuôi chung có thể gây sốc nước.`
+              })
+            }
+          }
+        }
+      }
+
+      // 2. Kiểm tra Nhiệt độ trùng khớp
+      for (let i = 0; i < liveItems.length; i++) {
+        for (let j = i + 1; j < liveItems.length; j++) {
+          const a = liveItems[i]
+          const b = liveItems[j]
+          if (a.tempMin != null && a.tempMax != null && b.tempMin != null && b.tempMax != null) {
+            const overlap = !(a.tempMin > b.tempMax || b.tempMin > a.tempMax)
+            if (!overlap) {
+              warnings.push({
+                type: 'danger',
+                text: `🌡️ Không tương thích nhiệt độ: "${a.name}" (${a.tempMin}°C - ${a.tempMax}°C) và "${b.name}" (${b.tempMin}°C - ${b.tempMax}°C) cần nhiệt độ nước khác nhau.`
+              })
+            }
+          }
+        }
+      }
+
+      // 3. Kiểm tra Tính khí (Hiền / Dữ)
+      const aggressiveKeywords = ['ali', 'chọi', 'betta', 'la hán', 'cá rồng', 'săn mồi', 'tai tượng', 'la han', 'choi', 'ca rong', 'aggressive', 'dữ', 'cắn đuôi']
+      const peacefulKeywords = ['neon', 'guppy', 'bảy màu', 'bay mau', 'molly', 'mún', 'mun', 'sọc ngựa', 'soc ngua', 'sặc gấm', 'sac gam', 'tân vân', 'tan van', 'peaceful', 'hiền', 'hien', 'chuột', 'dọn bể']
+
+      for (let i = 0; i < liveItems.length; i++) {
+        for (let j = i + 1; j < liveItems.length; j++) {
+          const a = liveItems[i]
+          const b = liveItems[j]
+          const aNameLower = a.name.toLowerCase()
+          const bNameLower = b.name.toLowerCase()
+          const aCompatLower = (a.compatibility || '').toLowerCase()
+          const bCompatLower = (b.compatibility || '').toLowerCase()
+
+          const aIsAggressive = aggressiveKeywords.some(k => aNameLower.includes(k) || aCompatLower.includes(k))
+          const bIsAggressive = aggressiveKeywords.some(k => bNameLower.includes(k) || bCompatLower.includes(k))
+          const aIsPeaceful = peacefulKeywords.some(k => aNameLower.includes(k) || aCompatLower.includes(k))
+          const bIsPeaceful = peacefulKeywords.some(k => bNameLower.includes(k) || bCompatLower.includes(k))
+
+          if ((aIsAggressive && bIsPeaceful) || (bIsAggressive && aIsPeaceful)) {
+            const aggName = aIsAggressive ? a.name : b.name
+            const peaceName = aIsPeaceful ? a.name : b.name
+            warnings.push({
+              type: 'warning',
+              text: `⚠️ Cảnh báo tính khí: "${aggName}" có đặc tính hung dữ/bắt nạt, có thể tấn công "${peaceName}" hiền lành.`
+            })
+          }
+        }
+      }
+    }
+
+    setCompatWarnings(warnings)
+  }, [cart])
 
   useEffect(() => {
     if (user) {
@@ -188,6 +266,34 @@ export default function Cart() {
         {stockNotice && (
           <div className={styles.stockNotice}>
             {stockNotice}
+          </div>
+        )}
+
+        {/* Bộ tự động kiểm tra tương thích nước */}
+        {cart.length > 0 && (
+          <div className={styles.compatContainer}>
+            <div className={styles.compatHeader}>
+              <span style={{ fontSize: '1.25rem' }}>🌊</span>
+              <h3>BỘ KIỂM TRA ĐỘ TƯƠNG THÍCH MÔI TRƯỜNG & TÍNH KHÍ</h3>
+            </div>
+            <div className={styles.compatList}>
+              {compatWarnings.length > 0 ? (
+                compatWarnings.map((warn, index) => (
+                  <div
+                    key={index}
+                    className={`${styles.compatItem} ${
+                      warn.type === 'danger' ? styles.compatDanger : styles.compatWarning
+                    }`}
+                  >
+                    <div>{warn.text}</div>
+                  </div>
+                ))
+              ) : (
+                <div className={`${styles.compatItem} ${styles.compatSuccess}`}>
+                  <span>✓</span> Các sinh vật trong giỏ hàng hoàn toàn tương thích với nhau về thông số nước (pH, nhiệt độ) và tính khí! Bạn có thể nuôi chung chúng cùng một bể.
+                </div>
+              )}
+            </div>
           </div>
         )}
 

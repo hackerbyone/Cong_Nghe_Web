@@ -48,6 +48,11 @@ const mapCartItems = (items) =>
     availableStock: i.availableStock ?? null,
     image: i.imageUrl,
     selectedGender: i.selectedGender ?? null,
+    phMin: i.phMin ?? null,
+    phMax: i.phMax ?? null,
+    tempMin: i.tempMin ?? null,
+    tempMax: i.tempMax ?? null,
+    compatibility: i.compatibility ?? null,
   }));
 
 export function CartProvider({ children }) {

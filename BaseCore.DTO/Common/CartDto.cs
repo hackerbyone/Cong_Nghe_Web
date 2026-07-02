@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace BaseCore.DTO.Common
 {
@@ -22,6 +22,11 @@ namespace BaseCore.DTO.Common
         public decimal SubTotal => Price * Quantity;
         public string ImageUrl { get; set; } = "";
         public string? SelectedGender { get; set; }
+        public decimal? PhMin { get; set; }
+        public decimal? PhMax { get; set; }
+        public decimal? TempMin { get; set; }
+        public decimal? TempMax { get; set; }
+        public string? Compatibility { get; set; }
     }
 
     public class AddToCartDto

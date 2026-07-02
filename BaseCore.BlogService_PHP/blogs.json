@@ -1,0 +1,22 @@
+[
+    {
+        "Id": "blog-sample-1",
+        "Title": "Hướng dẫn thay nước và chăm sóc cá Neon Tetra tại nhà",
+        "ShortDescription": "Cá Neon là loài cá cảnh nhạy cảm với chất lượng nước. Bài viết này hướng dẫn bạn cách giữ pH ổn định và thay nước đúng cách.",
+        "Content": "Cá Neon Tetra (cá huỳnh quang) là loài cá sống bầy đàn rất được ưa chuộng. Để chăm sóc chúng tốt nhất, pH nước cần duy trì ở mức 6.0 - 7.0 và nhiệt độ từ 22-26°C. Khi thay nước, chỉ nên thay 20-30% lượng nước trong bể để tránh làm cá sốc nước. Sử dụng dung dịch khử clo trước khi cho nước mới vào.",
+        "ImageUrl": "https:\/\/bizweb.dktcdn.net\/100\/441\/675\/products\/neon-tetra-bred-jpg-v-1623742471493.jpg?v=1773116727353",
+        "Author": "Chuyên gia AquaViet",
+        "PublishDate": "2026-07-02 04:15:46",
+        "IsActive": 1
+    },
+    {
+        "Id": "blog-sample-2",
+        "Title": "Cách xử lý bể cá cảnh bị đục nước nhanh chóng hiệu quả",
+        "ShortDescription": "Nước bể cá bị đục trắng hoặc đục xanh là vấn đề nan giải. Tìm hiểu nguyên nhân và cách xử lý triệt để trong 24h.",
+        "Content": "Hiện tượng đục nước thường do hệ vi sinh chưa ổn định hoặc do thức ăn thừa quá nhiều. Bạn nên bổ sung vi sinh quang hợp, giảm lượng thức ăn cho cá ăn hàng ngày, và lắp đặt một hệ thống lọc treo hoặc lọc tràn chất lượng.",
+        "ImageUrl": "https:\/\/aquahouse.vn\/wp-content\/uploads\/2026\/03\/Loc-treo-Baoyu-LX-280-380-480-giai-phap-tach-phan-va-loc-da-tang-toan-dien.jpg",
+        "Author": "Admin Cửa Hàng",
+        "PublishDate": "2026-07-02 04:15:46",
+        "IsActive": 1
+    }
+]
